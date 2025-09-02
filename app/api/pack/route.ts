@@ -14,8 +14,13 @@ import { buildProjectMap } from "@/lib/treemap";
 export const dynamic = "force-dynamic";
 
 function shouldSkipPath(rel: string) {
-  if (IGNORE_DIRS.some((d) => rel.startsWith(d))) return true;
-  const base = rel.split("/").pop() || "";
+  const p = rel.replaceAll("\\", "/"); // 念のため
+  // 任意の階層に含まれるディレクトリを判定
+  for (const d of IGNORE_DIRS) {
+    const dir = d.endsWith("/") ? d : d + "/";
+    if (p.includes(`/${dir}`) || p.startsWith(dir)) return true;
+  }
+  const base = p.split("/").pop() || "";
   if (IGNORE_FILES.includes(base)) return true;
   return false;
 }

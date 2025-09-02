@@ -1,5 +1,5 @@
 export const IGNORE_DIRS = [
-  "node_modues/",
+  "node_modules/",
   ".git/",
   "dist/",
   "build/",
@@ -10,7 +10,7 @@ export const IGNORE_DIRS = [
   "__pycache__/",
   "coverage/",
   "out/",
-  ".turbo.",
+  ".turbo",
 ];
 
 export const IGNORE_FILES = [
@@ -25,14 +25,14 @@ export const BINARY_EXTS = new Set([
   "png",
   "jpg",
   "jpeg",
-  "git",
+  "gif",
   "webp",
   "ico",
-  "pfd",
+  "pdf",
   "zip",
   "jar",
   "exe",
-  "bylib",
+  "dylib",
   "so",
   "class",
   "woff",

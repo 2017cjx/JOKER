@@ -10,10 +10,10 @@ export function buildProjectMap(paths: string[], sourceName: string) {
     "```",
     "",
     "## Buckets",
-    "- src: app/src/components/lib など",
-    "- tests: __tests__/*.test.* など",
-    "- config: package.json/tsconfig/prisma など",
-    "- scripts: scripts/bin/migrations など",
+    "- src: app/src/components/lib etc.",
+    "- tests: __tests__/*.test.* etc",
+    "- config: package.json/tsconfig/prisma etc",
+    "- scripts: scripts/bin/migrations etc",
     "",
   ];
   return lines.join("\n");
