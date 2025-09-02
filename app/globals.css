@@ -1,0 +1,59 @@
+:root {
+  --bg: #000000;
+  --bg-2: #121212;
+  --fg: #ffffff;
+  --fg-2: #b0b0b0;
+  --accent: #6a0dad;
+  --accent-2: #9b30ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  color: var(--fg);
+  background: radial-gradient(1200px 800px at 70% -10%, #140023 0%, #000 60%),
+    var(--bg);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe Ui, Roboto,
+    "Noto Sans JP", Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+.button {
+  background: liniear-gradient(90deg, var(--accent) 0%, var(--accent-2) 100%);
+  border: none;
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(155, 48, 255, 0.2);
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 0.05s ease, filter 0.2s ease;
+}
+.button:hover {
+  filter: brightness(1.08);
+}
+.button:active {
+  transform: translateY(1px);
+}
+
+.card {
+  background: linear-gradient(180deg, rgba(106, 13, 173, 0.12)),
+    rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(155, 48, 255, 0.25);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", monospace;
+}
+
+.subtle {
+  color: var(--fg-2);
+}
