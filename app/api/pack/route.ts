@@ -38,6 +38,21 @@ export async function POST(req: NextRequest) {
   );
   const allPaths = Object.keys(inputZip.files).map(posix).sort();
 
+  const firstSegs = allPaths
+    .filter((p) => p && !p.startsWith("__MACOSX"))
+    .map((p) => p.split("/")[0]!)
+    .filter(Boolean);
+  let root = "";
+  if (firstSegs.length) {
+    const counts = new Map<string, number>();
+    for (const s of firstSegs) counts.set(s, (counts.get(s) || 0) + 1);
+    root = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]![0];
+  }
+  const fallbackFromZipName =
+    (file.name || "").replace(/\.zip$/i, "") || "project";
+  const baseName = root || fallbackFromZipName;
+  const safeName = baseName.replace(/[\\/:*?"<>|]+/g, "-").slice(0, 80);
+
   const mapMd = buildProjectMap(allPaths, file.name);
 
   const buckets: Record<"src" | "tests" | "config" | "scripts", string[]> = {
@@ -121,7 +136,7 @@ export async function POST(req: NextRequest) {
   return new Response(outBlob, {
     headers: {
       "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="dumps.zip"`,
+      "Content-Disposition": `attachment; filename="${safeName}-dump.zip"`,
     },
   });
 }

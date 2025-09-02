@@ -1,14 +1,16 @@
 "use client";
-"use client";
 import { useState, useRef, useEffect } from "react";
 import JSZip from "jszip";
 import ToggleCard from "@/app/components/ToggleCard";
+import ContactForm from "./contact/ContactForm";
 
 export default function Page() {
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<number | null>(0);
   const [log, setLog] = useState("Ready.");
   const dropRef = useRef<HTMLDivElement | null>(null);
   const [dragging, setDragging] = useState(false);
+  const year = new Date().getFullYear();
 
   async function onPickFolder(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
@@ -18,47 +20,79 @@ export default function Page() {
 
   async function processFiles(files: FileList) {
     setBusy(true);
+    setProgress(0); // ← 追加
     setLog("Zipping folder...");
     try {
       const zip = new JSZip();
-      for (const f of Array.from(files)) {
+      const list = Array.from(files);
+      const total = list.length;
+
+      // 0〜60%: ファイル取り込み
+      let done = 0;
+      for (const f of list) {
         const rel = (f as any).webkitRelativePath || f.name;
         zip.file(rel, await f.arrayBuffer());
+        done++;
+        setProgress(Math.min(60, Math.round((done / total) * 60))); // ← 追加
       }
-      const zipped = await zip.generateAsync({
-        type: "blob",
-        compression: "DEFLATE",
-        compressionOptions: { level: 6 },
-      });
+
+      // 60〜90%: 圧縮（JSZipの進捗コールバック）
+      const zipped = await zip.generateAsync(
+        {
+          type: "blob",
+          compression: "DEFLATE",
+          compressionOptions: { level: 6 },
+        },
+        (meta) => {
+          const p = 60 + Math.round((meta.percent || 0) * 0.3); // 60→90
+          setProgress(Math.min(90, p)); // ← 追加
+        }
+      );
 
       setLog("Uploading to JOKER...");
+      setProgress(92); // ← 追加
+
       const form = new FormData();
       form.append(
         "archive",
         new File([zipped], "project.zip", { type: "application/zip" })
       );
-
       const res = await fetch("/api/pack", { method: "POST", body: form });
       if (!res.ok) {
         setBusy(false);
+        setProgress(null); // ← 追加
         setLog("Server error.");
         return;
       }
 
+      // 90〜100%: ダウンロード
+      setProgress(98);
       const blob = await res.blob();
+
+      // レスポンスヘッダからファイル名抽出
+      let filename = "dumps.zip";
+      const cd = res.headers.get("Content-Disposition");
+      const m = cd && cd.match(/filename="([^"]+)"/);
+      if (m && m[1]) filename = m[1];
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "dumps.zip";
+      a.download = filename;
+      document.body.appendChild(a);
       a.click();
+      a.remove();
       URL.revokeObjectURL(url);
 
-      setLog("Done! Downloaded dumps.zip");
+      setProgress(100);
+      setLog(`Done! Downloaded ${filename}`);
     } catch (e: any) {
       console.error(e);
       setLog(`Something went wrong. ${e?.message || ""}`.trim());
     } finally {
       setBusy(false);
+      // 余韻でプログレスを隠したい場合は次を有効化
+      // setTimeout(() => setProgress(null), 800);
     }
   }
 
@@ -111,7 +145,7 @@ export default function Page() {
       </div>
       <main
         style={{
-          minHeight: "60vh",
+          //   minHeight: "60vh",
           display: "grid",
           placeItems: "center",
           padding: "24px",
@@ -158,10 +192,33 @@ export default function Page() {
                 or drag & drop the folder onto this card
               </div>
             </div>
-
+            {progress !== null && (
+              <div
+                className="progress"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progress}
+              >
+                <div
+                  className="progress-fill"
+                  style={{ width: `${progress}%` }}
+                />
+                <div className="progress-label subtle">
+                  {busy
+                    ? `Zipping & Uploading… ${progress}%`
+                    : progress === 100
+                    ? "Complete — 100%"
+                    : `Idle — ${progress}%`}
+                </div>
+              </div>
+            )}
             <p
               className="mono subtle"
-              style={{ marginTop: 16, whiteSpace: "pre-wrap" }}
+              style={{
+                marginTop: 16,
+                whiteSpace: "pre-wrap",
+              }}
             >
               {log}
             </p>
@@ -261,8 +318,15 @@ export default function Page() {
               </li>
             </ul>
           </ToggleCard>
+
+          <ToggleCard title="Contact">
+            <ContactForm />
+          </ToggleCard>
         </div>
       </main>
+      <footer className="footer">
+        © {year} JOKER — Safe project dumps for AI
+      </footer>
     </>
   );
 }
