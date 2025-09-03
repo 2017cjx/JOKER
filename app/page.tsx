@@ -29,11 +29,22 @@ export default function Page() {
 
       // 0〜60%: ファイル取り込み
       let done = 0;
+      const IGNORE = ["node_modules/", "dist/", "build/", ".next/", ".vercel/"];
+      const skippedDirs = new Set<string>();
+
       for (const f of list) {
         const rel = (f as any).webkitRelativePath || f.name;
+
+        if (IGNORE.some((d) => rel.includes(`/${d}`) || rel.startsWith(d))) {
+          // 先頭ディレクトリを残しておく
+          const top = rel.split("/")[0];
+          skippedDirs.add(top);
+          continue;
+        }
+
         zip.file(rel, await f.arrayBuffer());
         done++;
-        setProgress(Math.min(60, Math.round((done / total) * 60))); // ← 追加
+        setProgress(Math.min(60, Math.round((done / total) * 60)));
       }
 
       // 60〜90%: 圧縮（JSZipの進捗コールバック）

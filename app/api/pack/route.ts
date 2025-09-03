@@ -53,7 +53,17 @@ export async function POST(req: NextRequest) {
   const baseName = root || fallbackFromZipName;
   const safeName = baseName.replace(/[\\/:*?"<>|]+/g, "-").slice(0, 80);
 
-  const mapMd = buildProjectMap(allPaths, file.name);
+  let mapMd = buildProjectMap(allPaths, file.name);
+  const skippedJson = form.get("skipped") as string | null;
+  if (skippedJson) {
+    const skippedDirs: string[] = JSON.parse(skippedJson);
+    if (skippedDirs.length) {
+      mapMd += "\n\n## Skipped Directories (size too large)\n";
+      for (const dir of skippedDirs) {
+        mapMd += `- ${dir}/ (skipped)\n`;
+      }
+    }
+  }
 
   const buckets: Record<"src" | "tests" | "config" | "scripts", string[]> = {
     src: [],
