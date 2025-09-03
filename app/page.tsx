@@ -135,13 +135,16 @@ export default function Page() {
     <>
       <div
         style={{
+          display: "grid",
           placeItems: "center",
           marginTop: "50px",
         }}
       >
         <h1 style={{ marginBottom: 20 }}>JOKER</h1>
         <p className="subtle">📁 → 📃 → 🤖</p>
-        <p className="subtle">Upload. Convert. Let AI Understand Your App.</p>
+        <p className="subtle tagline">
+          Upload. Convert. Let AI Understand Your App.
+        </p>
       </div>
       <main
         style={{

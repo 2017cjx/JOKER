@@ -25,6 +25,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.tagline {
+  max-width: 860px; /* card と同じ最大幅 */
+  margin: 0 auto; /* 中央寄せ */
+  text-align: center; /* （任意）テキスト中央揃え */
+  padding: 0 20px; /* カードと同じ左右余白 */
+}
+
 /* Button */
 .button {
   background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 100%);
