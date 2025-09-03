@@ -132,8 +132,8 @@ export async function POST(req: NextRequest) {
   out.file("config_dump.txt", buckets.config.join("\n"));
   out.file("scripts_dump.txt", buckets.scripts.join("\n"));
 
-  const outBlob = await out.generateAsync({ type: "uint8array" });
-  return new Response(outBlob, {
+  const outBuf = await out.generateAsync({ type: "arraybuffer" });
+  return new Response(outBuf, {
     headers: {
       "Content-Type": "application/zip",
       "Content-Disposition": `attachment; filename="${safeName}-dump.zip"`,
