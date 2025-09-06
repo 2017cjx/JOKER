@@ -1,0 +1,46 @@
+name = "joker-worker"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+
+# 公開URLは不要（Queueコンシューマのみ）なので明示的にオフ
+workers_dev = false
+
+# 共通: Queue コンシューマ（同じキューを使う想定）
+[[queues.consumers]]
+queue = "joker-uploads"
+max_batch_size = 5
+max_batch_timeout = 5
+
+# ===== dev（ローカル Next を叩く。実行は --local が必須）=====
+[env.dev]
+
+[[env.dev.r2_buckets]]
+binding = "R2"
+bucket_name = "joker"
+
+[env.dev.vars]
+R2_BUCKET = "joker"
+NEXT_API_BASE = "http://localhost:3000"
+
+# ===== preview（Vercel プレビューを叩く）=====
+[env.preview]
+
+[[env.preview.r2_buckets]]
+binding = "R2"
+bucket_name = "joker"
+
+[env.preview.vars]
+R2_BUCKET = "joker"
+NEXT_API_BASE = "https://joker-xh9n.vercel.app"
+
+# ===== production（本番ドメインを叩く）=====
+[env.production]
+
+[[env.production.r2_buckets]]
+binding = "R2"
+bucket_name = "joker"
+
+[env.production.vars]
+R2_BUCKET = "joker"
+NEXT_API_BASE = "https://joker.uemura1999.com"
+

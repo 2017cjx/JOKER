@@ -20,34 +20,29 @@ export default function Page() {
 
   async function processFiles(files: FileList) {
     setBusy(true);
-    setProgress(0); // ← 追加
+    setProgress(0);
     setLog("Zipping folder...");
     try {
       const zip = new JSZip();
       const list = Array.from(files);
       const total = list.length;
 
-      // 0〜60%: ファイル取り込み
       let done = 0;
       const IGNORE = ["node_modules/", "dist/", "build/", ".next/", ".vercel/"];
       const skippedDirs = new Set<string>();
 
       for (const f of list) {
         const rel = (f as any).webkitRelativePath || f.name;
-
         if (IGNORE.some((d) => rel.includes(`/${d}`) || rel.startsWith(d))) {
-          // 先頭ディレクトリを残しておく
           const top = rel.split("/")[0];
           skippedDirs.add(top);
           continue;
         }
-
         zip.file(rel, await f.arrayBuffer());
         done++;
         setProgress(Math.min(60, Math.round((done / total) * 60)));
       }
 
-      // 60〜90%: 圧縮（JSZipの進捗コールバック）
       const zipped = await zip.generateAsync(
         {
           type: "blob",
@@ -55,55 +50,70 @@ export default function Page() {
           compressionOptions: { level: 6 },
         },
         (meta) => {
-          const p = 60 + Math.round((meta.percent || 0) * 0.3); // 60→90
-          setProgress(Math.min(90, p)); // ← 追加
+          const p = 60 + Math.round((meta.percent || 0) * 0.3);
+          setProgress(Math.min(90, p));
         }
       );
 
-      setLog("Uploading to JOKER...");
-      setProgress(92); // ← 追加
+      // ===== ここから差し替え：R2 へ直PUT =====
+      setLog("Requesting a presigned URL…");
+      setProgress(91);
 
-      const form = new FormData();
-      form.append(
-        "archive",
-        new File([zipped], "project.zip", { type: "application/zip" })
-      );
-      const res = await fetch("/api/pack", { method: "POST", body: form });
-      if (!res.ok) {
-        setBusy(false);
-        setProgress(null); // ← 追加
-        setLog("Server error.");
-        return;
-      }
+      // 例: 'project.zip' としてアップロード
+      const uploadName = "project.zip";
+      const contentType = "application/zip";
 
-      // 90〜100%: ダウンロード
-      setProgress(98);
-      const blob = await res.blob();
+      // 1) 署名URLを取得
+      const presignRes = await fetch("/api/r2/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: uploadName, contentType }),
+      });
+      if (!presignRes.ok) throw new Error("Failed to get presigned URL");
+      const presign = await presignRes.json(); // ← 1回だけ
+      const { url, objectKey, jobId } = presign;
 
-      // レスポンスヘッダからファイル名抽出
-      let filename = "dumps.zip";
-      const cd = res.headers.get("Content-Disposition");
-      const m = cd && cd.match(/filename="([^"]+)"/);
-      if (m && m[1]) filename = m[1];
+      // 2) 署名URLにPUT（R2へアップロード）
+      setLog("Uploading to R2…");
+      setProgress(94);
+      const putRes = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": contentType },
+        body: zipped,
+      });
+      if (!putRes.ok) throw new Error("R2 upload failed");
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      // 3) PUT成功したらジョブ監視開始
+      setLog("Upload complete. Waiting for processing…");
 
-      setProgress(100);
-      setLog(`Done! Downloaded ${filename}`);
+      const timer = setInterval(async () => {
+        try {
+          const r = await fetch(`/api/jobs/${jobId}`);
+          if (!r.ok) return;
+          const st = await r.json();
+
+          if (st.status === "done" && st.downloadUrl) {
+            clearInterval(timer);
+            setProgress(100);
+            setLog("Done! Download ready.");
+
+            // 自動ダウンロード
+            window.location.href = st.downloadUrl;
+          } else if (st.status === "error") {
+            clearInterval(timer);
+            setLog("Processing failed.");
+            setProgress(null);
+          }
+        } catch {
+          // ネットワーク一時失敗は無視してリトライ
+        }
+      }, 2500);
     } catch (e: any) {
       console.error(e);
       setLog(`Something went wrong. ${e?.message || ""}`.trim());
+      setProgress(null);
     } finally {
       setBusy(false);
-      // 余韻でプログレスを隠したい場合は次を有効化
-      // setTimeout(() => setProgress(null), 800);
     }
   }
 
