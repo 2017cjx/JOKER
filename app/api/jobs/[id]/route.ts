@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { r2 } from "@/lib/r2";
+import { getR2 } from "@/lib/r2";
 import {
   HeadObjectCommand,
   ListObjectsV2Command,
@@ -21,6 +21,7 @@ export async function GET(
   try {
     // 1) 完了品チェック
     const resultKey = `results/${jobId}.zip`;
+    const r2 = getR2();
     try {
       await r2.send(new HeadObjectCommand({ Bucket: BUCKET, Key: resultKey }));
       const url = await getSignedUrl(

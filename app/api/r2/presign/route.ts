@@ -1,6 +1,6 @@
 // app/api/r2/presign/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { r2 } from "@/lib/r2";
+import { getR2 } from "@/lib/r2";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
 
     // 4) 署名URL（有効期限）
     const expiresIn = 60 * 5; // 5分
+    const r2 = getR2();
     const url = await getSignedUrl(r2, cmd, { expiresIn });
 
     // 5) 返却（フロントは jobId を保持→ポーリング用に使う）
